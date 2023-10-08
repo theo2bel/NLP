@@ -1,13 +1,14 @@
 import streamlit as st
-import os
 import nltk
 from nltk import word_tokenize, pos_tag
 from nltk.corpus import sentiwordnet as swn
+from nltk.corpus import wordnet as wn
 
 # Download NLTK data (if not already downloaded)
 nltk.download('punkt')
 nltk.download('averaged_perceptron_tagger')
 nltk.download('sentiwordnet')
+nltk.download('wordnet')  # Add this line to download WordNet data
 
 # Function to identify adverbs in a text
 def identify_adverbs(text):
@@ -50,4 +51,3 @@ if input_text:
     positivity_score = sum([float(i[0]) - float(i[1]) for i in adverb_scores[0]])
 
     st.write(f"Positivity Score: {positivity_score:.2f}")
-
