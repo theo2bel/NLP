@@ -1,36 +1,53 @@
 import streamlit as st
-import spacy
+import os
+import nltk
+from nltk import word_tokenize, pos_tag
+from nltk.corpus import sentiwordnet as swn
 
-# Load the spaCy model
-nlp = spacy.load("en_core_web_sm")
+# Download NLTK data (if not already downloaded)
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('sentiwordnet')
 
-# Tokenize and tag text
-def tokenize_and_tag(text):
-    doc = nlp(text)
-    tokens = []
-    for token in doc:
-        if token.is_alpha:
-            nature = token.pos_
-            if nature.startswith("V"):
-                color = "green"  # Verb
-            elif nature.startswith("N"):
-                color = "blue"   # Noun
-            elif nature == "RB":
-                color = "red"    # Adverb
-            else:
-                color = "black"  # Other
-            tokens.append(f'<span style="color:{color}">{token.text}</span>')
-        else:
-            tokens.append(token.text)
-    return " ".join(tokens)
+# Function to identify adverbs in a text
+def identify_adverbs(text):
+    words = word_tokenize(text)
+    tagged_words = pos_tag(words)
+    adverbs = [word for word, pos in tagged_words if pos.startswith('RB')]
+    return adverbs
+
+# Function to score adverbs using SentiWordNet
+def score_adverbs_with_swn(adverbs):
+    adverb_scores = []
+    for text in adverbs:
+        score_text = []
+        for adverb in text:
+            synsets = list(swn.senti_synsets(adverb))
+            if synsets:
+                # Take the first synset as a simple example (you can combine multiple synsets)
+                synset = synsets[0]
+                positive_score = synset.pos_score()
+                negative_score = synset.neg_score()
+                objective_score = synset.obj_score()
+                score_text.append((positive_score, negative_score, objective_score))
+        adverb_scores.append(score_text)
+    return adverb_scores
 
 # Streamlit app
-st.title("Tokenization and Word Nature Display")
+st.title("Text Positivity Calculator")
 
-# Input text
-input_text = st.text_area("Enter a text:")
+# Input text box
+input_text = st.text_area("Enter text here:")
 
-# Tokenize and display the nature of words
 if input_text:
-    st.markdown(tokenize_and_tag(input_text), unsafe_allow_html=True)
+    # Identify adverbs in the input text
+    adverbs = identify_adverbs(input_text)
+    
+    # Score the adverbs using SentiWordNet
+    adverb_scores = score_adverbs_with_swn([adverbs])
+
+    # Calculate the positivity score for the input text
+    positivity_score = sum([float(i[0]) - float(i[1]) for i in adverb_scores[0]])
+
+    st.write(f"Positivity Score: {positivity_score:.2f}")
 
